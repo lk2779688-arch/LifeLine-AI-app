@@ -1,0 +1,16 @@
+FROM node:18-slim AS base
+RUN apt-get update && apt-get install -y openssl
+WORKDIR /app
+
+FROM base AS builder
+COPY . .
+RUN npm install
+RUN npx turbo run build --filter=api-gateway
+
+FROM base AS runner
+COPY --from=builder /app/services/api-gateway/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+
+EXPOSE 4000
+CMD ["node", "dist/index.js"]

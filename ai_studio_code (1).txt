@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BloodType {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
+}
+
+enum EmergencyStatus {
+  IDLE
+  PENDING
+  ACTIVE
+  RESOLVED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  fullName      String
+  phoneNumber   String    @unique
+  createdAt     DateTime  @default(now())
+  
+  // Medical ID
+  bloodType     BloodType?
+  allergies     String[]
+  medications   String[]
+  conditions    String[]
+  
+  // Relations
+  guardians     Guardian[]
+  vitals        VitalSign[]
+  emergencies   EmergencyEvent[]
+}
+
+model Guardian {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  name         String
+  phone        String
+  relationship String
+  isPrimary    Boolean  @default(false)
+}
+
+model VitalSign {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // heart_rate, spo2, blood_pressure
+  value     Float
+  unit      String
+  timestamp DateTime @default(now())
+
+  @@index([userId, timestamp])
+}
+
+model EmergencyEvent {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id])
+  status    EmergencyStatus @default(PENDING)
+  lat       Float
+  lng       Float
+  triggeredAt DateTime      @default(now())
+  resolvedAt  DateTime?
+}
